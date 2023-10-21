@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=desafioVr
+    ports:
+      - 5432:5432
+
+#     volumes:
+#       - pg-data:/var/lib/postgresql/data
+# volumes:
+#   pg-data:
