@@ -2,13 +2,13 @@ services:
   postgres:
     image: postgres
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=desafioVr
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
     ports:
-      - 5432:5432
-
-#     volumes:
-#       - pg-data:/var/lib/postgresql/data
-# volumes:
-#   pg-data:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped

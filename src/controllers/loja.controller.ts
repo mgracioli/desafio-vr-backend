@@ -1,39 +1,17 @@
-import { Controller, Delete, Get, Post, Put } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
+import { LojaService } from 'src/services/loja.service';
 
 @Controller('/loja')
 export class LojaController {
-  @Post()
-  public CadastraLoja(): any {
-    return {
-      data: 'Criou!',
-    };
-  }
+  constructor(private readonly lojaService: LojaService) { }
 
   @Get()
-  public BuscaLojas(): any {
-    return {
-      data: 'teste',
-    };
+  buscarLojas(): any {
+    return this.lojaService.buscarLojas();
   }
 
   @Get(':id')
-  public BuscaLoja(): any {
-    return {
-      data: 'teste',
-    };
-  }
-
-  @Put(':id')
-  public AtualizaLoja(): any {
-    return {
-      data: 'teste',
-    };
-  }
-
-  @Delete(':id')
-  public ExcluiLoja(): any {
-    return {
-      data: 'teste',
-    };
+  buscarLoja(@Param('id') id: string): any {
+    return this.lojaService.buscarLoja(+id);
   }
 }

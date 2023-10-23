@@ -3,12 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LojaModule } from './modules/loja.module';
-import { PostgresConfigService } from './configs/postgres.config.service';
 import { ConfigModule } from '@nestjs/config';
+import { PostgresConfigService } from './configs/postgres.config.service';
+import { TesteModule } from './teste/teste.module';
+import { ProdutoModule } from './modules/produto.module';
+import { Validators } from './schemas/validators';
+import { ProdutoLojaModule } from './modules/produto-loja.module';
 
 @Module({
   imports: [
-    LojaModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -16,8 +19,12 @@ import { ConfigModule } from '@nestjs/config';
       useClass: PostgresConfigService,
       inject: [PostgresConfigService],
     }),
+    LojaModule,
+    TesteModule,
+    ProdutoModule,
+    ProdutoLojaModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, Validators],
 })
 export class AppModule { }

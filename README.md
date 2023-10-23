@@ -3,5 +3,6 @@
 </h2>
 
 <ul>
-  <li>Para iniciar a aplicação: npm run start / npm run start:dev</li>
+  <li>Iniciar a aplicação: npm run start / npm run start:dev</li>
+  <li>Migrations: npm run typeorm migration:generate src/database/migrations/nome-da-migration</li>
 </ul>
