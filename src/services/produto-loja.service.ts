@@ -47,32 +47,35 @@ export class ProdutoLojaService {
   //   return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtos);
   // }
 
-  async buscarProdutoLoja(produtoId: number) {
-    const arrayErros = [];
+  // async buscarProdutoLoja(produtoId: number) {
+  //   const arrayErros = [];
 
-    const produtoLoja = await this.produtoLojaRepository
-      .createQueryBuilder('pl')
-      .select('pl.*')
-      .addSelect('p.descricao as prod_desc')
-      .addSelect('p.custo as prod_custo')
-      .addSelect('p.imagem as prod_imagem')
-      .addSelect('l.descricao as loja_desc')
-      .leftJoin('produto', 'p', 'p.id = pl.id_produto')
-      .leftJoin('loja', 'l', 'l.id = pl.id_loja')
-      .where({ id_produto: produtoId })
-      .getRawMany();
+  //   const produtoLoja = await this.produtoLojaRepository
+  //     .createQueryBuilder('pl')
+  //     .select('pl.*')
+  //     .addSelect('p.descricao as prod_desc')
+  //     .addSelect('p.custo as prod_custo')
+  //     .addSelect('p.imagem as prod_imagem')
+  //     .addSelect('l.descricao as loja_desc')
+  //     .leftJoin('produto', 'p', 'p.id = pl.id_produto')
+  //     .leftJoin('loja', 'l', 'l.id = pl.id_loja')
+  //     .where({ id_produto: produtoId })
+  //     .getRawMany();
 
-    if (!this.utils.ValidarObjeto(produtoLoja)) {
-      arrayErros.push({
-        codigo: '0.00',
-        descricao: 'Produto não localizado.',
-      });
+  //   if (!this.utils.ValidarObjeto(produtoLoja)) {
 
-      return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
-    }
+  //     //procurar so o produto, sem estar vinculado com a loja!!!!
 
-    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoLoja);
-  }
+  //     arrayErros.push({
+  //       codigo: '0.00',
+  //       descricao: 'Produto não localizado.',
+  //     });
+
+  //     return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+  //   }
+
+  //   return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoLoja);
+  // }
 
   // async excluirProdutoLoja(produtoId: number) {
   //   const arrayErros = [];
