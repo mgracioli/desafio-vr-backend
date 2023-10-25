@@ -7,8 +7,8 @@ const dataSourceOptions: DataSourceOptions = {
   port: Number(process.env.DB_PORT),
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
-  entities: [`${__dirname}/../**/*.entity{.js, .ts}`],
+  database: process.env.DB_NAME,
+  entities: [`${__dirname}/../entities/*.entity{.js, .ts}`],
   migrations: [`${__dirname}/migrations/*{.ts,.js}`],
 };
 

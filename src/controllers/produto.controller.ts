@@ -49,9 +49,9 @@ export class ProdutoController {
   }
 
   @Get(':id')
-  async buscarProdutoLoja(@Param('id') id: string, @Res() response: Response): Promise<Response> {
+  async buscarProdutoLoja(@Param('id') id: string, @Req() request: Request, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProduto(+id);
+      const objRetorno = await this.produtoService.buscarProduto(+id, request);
 
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
@@ -82,10 +82,10 @@ export class ProdutoController {
     }
   }
 
-  @Delete(':id')
-  async excluirProduto(@Param('id') id: string, @Res() response: Response): Promise<Response> {
+  @Delete()
+  async excluirProduto(@Req() request: Request, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.excluirProduto(+id);
+      const objRetorno = await this.produtoService.excluirProduto(request);
 
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:

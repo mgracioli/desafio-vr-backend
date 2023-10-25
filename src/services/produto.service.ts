@@ -16,49 +16,53 @@ export class ProdutoService {
     @InjectRepository(ProdutoEntity)
     private readonly produtoRepository: Repository<ProdutoEntity>,
     @InjectRepository(ProdutoLojaEntity)
-    private readonly produtoLojarepository: Repository<ProdutoLojaEntity>,
+    private readonly produtoLojaRepository: Repository<ProdutoLojaEntity>,
     @InjectRepository(LojaEntity)
     private readonly lojaRepository: Repository<LojaEntity>,
     private readonly utils: Utils,
   ) { }
 
-  async cadastrarProduto(produto: ProdutoEntity): Promise<TRetornoObjetoResponse> {
+  async cadastrarProduto(produto: any): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-
-    try {
-      const produtoSalvo = await this.produtoRepository.save(produto);
-
-      if (!this.utils.ValidarObjeto(produtoSalvo)) {
-        arrayErros.push({
-          codigo: '0.00',
-          descricao: 'Erro ao salvar produto.',
-        });
-
-        return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
-      }
-
-      const lojas = await this.lojaRepository.find()
-
-      if (lojas) {
-        for (let i = 0; i < lojas.length; i++) {
-          const objProdutoLoja = {
-            id_produto: produto.id,
-            id_loja: lojas[i].id,
-            preco_venda: 0
-          }
-
-          await this.produtoLojarepository.save(objProdutoLoja)
-        }
-      } else {
-        return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
-      }
-
-      return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
-    } catch {
-      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
-    } finally {
-      //xxxxxxxxxxxxxxxxxxxxx
+    const objProduto = {
+      descricao: produto.descricao,
+      custo: produto.custo,
+      imagem: produto.imagem
     }
+    const arrayLojaVenda = produto.lojas_preco
+
+    // try {
+    const produtoSalvo = await this.produtoRepository.save(objProduto);
+
+    if (!this.utils.ValidarObjeto(produtoSalvo)) {
+      arrayErros.push({
+        codigo: '0.00',
+        descricao: 'Erro ao salvar produto.',
+      });
+
+      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
+    }
+
+    if (arrayLojaVenda.length) {
+      for (let i = 0; i < arrayLojaVenda.length; i++) {
+        const objProdutoLoja = {
+          id_produto: produto.id_produto,
+          id_loja: arrayLojaVenda[i].id_loja,
+          preco_venda: arrayLojaVenda[i].preco_venda
+        }
+
+        await this.produtoLojaRepository.save(objProdutoLoja)
+      }
+    } else {
+      return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+    }
+
+    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
+    // } catch {
+    //   return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
+    // } finally {
+    //   //xxxxxxxxxxxxxxxxxxxxx
+    // }
   }
 
   async buscarProdutos(): Promise<TRetornoObjetoResponse> {
@@ -77,16 +81,17 @@ export class ProdutoService {
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtos);
   }
 
-  async buscarProduto(produtoId: number, req: Request = null) {
+  async buscarProduto(produtoId: number, req: Request) {
     const arrayErros = [];
-    let produto = (req.query.loja === 'true') ?
+    let produto = (req.query.loja && req.query.loja === 'true') ?
       await this.produtoRepository
         .createQueryBuilder('p')
         .select('p.*')
         .addSelect('p.descricao as prod_desc')
         .addSelect('p.custo as prod_custo')
-        .addSelect('p.imagem as prod_imagem')
         .addSelect('l.descricao as loja_desc')
+        .addSelect('l.id as id_loja')
+        .addSelect('pl.preco_venda as preco_venda')
         .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
         .leftJoin('loja', 'l', 'l.id = pl.id_loja')
         .where({ id: produtoId })
@@ -108,51 +113,63 @@ export class ProdutoService {
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produto);
   }
 
-  async buscarProdutoLoja(produtoId: number) {
+  async excluirProduto(req: Request = null) {
     const arrayErros = [];
 
-    const produtoLoja = await this.produtoRepository
-      .createQueryBuilder('p')
-      .select('p.*')
-      .addSelect('p.descricao as prod_desc')
-      .addSelect('p.custo as prod_custo')
-      .addSelect('p.imagem as prod_imagem')
-      .addSelect('l.descricao as loja_desc')
-      .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
-      .leftJoin('loja', 'l', 'l.id = pl.id_loja')
-      .where({ id: produtoId })
-      .getRawMany();
+    if (req.query.id_loja && req.query.id_loja !== 'null') {
+      const produtoLojaExcluido = await this.produtoLojaRepository
+        .createQueryBuilder('p')
+        .delete()
+        .where({ id_loja: req.query.id_loja })
+        .andWhere({ id_produto: req.query.id_produto })
+        .execute()
 
-    if (!this.utils.ValidarObjeto(produtoLoja)) {
+      if (produtoLojaExcluido.affected < 0) {
+        arrayErros.push({
+          codigo: '0.00',
+          descricao: 'Erro ao excluir produto.',
+        });
 
-      //procurar so o produto, sem estar vinculado com a loja!!!!
+        return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
+      }
+    } else if (req.query.id_produto && req.query.id_produto !== 'null') {
+      const produto = await this.buscarProduto(+req.query.id_produto, req);
 
+      if (!(produto.codigo_status === eStatusHTTP.SUCESSO)) {
+        return produto;
+      }
+
+      const produtoExcluido = await this.produtoRepository.delete(+req.query.id_produto);
+
+      if (produtoExcluido.affected < 0) {
+        arrayErros.push({
+          codigo: '0.00',
+          descricao: 'Erro ao excluir produto.',
+        });
+
+        return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
+      }
+    } else {
       arrayErros.push({
         codigo: '0.00',
-        descricao: 'Produto não localizado.',
+        descricao: 'Erro ao excluir produto.',
       });
 
-      return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
     }
 
-    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoLoja);
+    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, null);
   }
 
-  async excluirProduto(produtoId: number) {
+  async excluirProdutoLoja(lojaId: number) {
     const arrayErros = [];
 
-    const produto = await this.buscarProduto(produtoId);
-
-    if (!(produto.codigo_status === eStatusHTTP.SUCESSO)) {
-      return produto;
-    }
-
-    const produtoExcluido = await this.produtoRepository.delete(produtoId);
+    const produtoExcluido = await this.produtoLojaRepository.delete(lojaId);
 
     if (produtoExcluido.affected < 0) {
       arrayErros.push({
         codigo: '0.00',
-        descricao: 'Erro ao excluir produto.',
+        descricao: 'Erro ao excluir vinculo.',
       });
 
       return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);

@@ -1,14 +1,35 @@
+version: "3.5"
+
 services:
-  postgres:
+  backend:
+    container_name: desafiovrbackend
+    image: mrg/desafiovrbackend:1.0.0
+    build: .
+    ports:
+      - 3000:${SERVER_PORT}
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: database
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: ${DB_PORT}
+    depends_on:
+      - database
+  database:
+    container_name: desafiovrpostgres
     image: postgres
+    ports:
+      - '${DB_PORT}:${DB_PORT}'
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      PGDATA: /data/postgres
     volumes:
-      - postgres:/data/postgres
-    ports:
-      - "5432:5432"
+      - pgdata:/var/lib/postgresql/data
     networks:
       - postgres
     restart: unless-stopped
+volumes:
+  pgdata:
+networks:
+  postgres:
