@@ -9,7 +9,7 @@ import { ResponseService } from 'src/services/response.service';
 import { Utils } from 'src/utils/sistema.utils';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProdutoEntity, ProdutoLojaEntity, LojaEntity])],
+  imports: [TypeOrmModule.forFeature([ProdutoEntity, ProdutoLojaEntity])],
   controllers: [ProdutoController],
   providers: [ProdutoService, Utils, ResponseService],
 })

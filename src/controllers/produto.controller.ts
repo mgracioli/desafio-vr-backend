@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Req, Res } from '@nestjs/common';
 import { ProdutoSchema } from 'src/schemas/produto.schema';
 import { eStatusHTTP } from 'src/services/@enums/response.enum';
 import { ProdutoService } from 'src/services/produto.service';
@@ -15,7 +15,7 @@ export class ProdutoController {
   ) { }
 
   @Post()
-  async cadastrarProduto(@Body() produto: ProdutoSchema, @Res() response: Response): Promise<Response> {
+  async cadastrarProduto(@Body() produto: any, @Res() response: Response): Promise<Response> {
     try {
       const objRetorno = await this.produtoService.cadastrarProduto(produto);
 
@@ -31,16 +31,16 @@ export class ProdutoController {
     }
   }
 
-  @Get(':id')
-  async buscarProduto(@Param('id') id: string, @Req() request: Request, @Res() response: Response): Promise<Response> {
+  @Put()
+  async editarProduto(@Body() produto: any, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProduto(+id, request);
+      const objRetorno = await this.produtoService.editarProduto(produto);
 
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
-        case eStatusHTTP.NAO_LOCALIZADO:
-          return await this.responseService.NotFoundResult(response, objRetorno);
+        case eStatusHTTP.ERRO_SERVIDOR:
+          return await this.responseService.ServerErrorResult(response, objRetorno);
       }
     } catch (error) {
       const objRetorno = this.utils.TratarErros(error);
@@ -49,7 +49,7 @@ export class ProdutoController {
   }
 
   @Get(':id')
-  async buscarProdutoLoja(@Param('id') id: string, @Req() request: Request, @Res() response: Response): Promise<Response> {
+  async buscarProduto(@Param('id') id: string, @Req() request: Request, @Res() response: Response): Promise<Response> {
     try {
       const objRetorno = await this.produtoService.buscarProduto(+id, request);
 

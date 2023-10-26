@@ -17,9 +17,8 @@ export class ProdutoService {
     private readonly produtoRepository: Repository<ProdutoEntity>,
     @InjectRepository(ProdutoLojaEntity)
     private readonly produtoLojaRepository: Repository<ProdutoLojaEntity>,
-    @InjectRepository(LojaEntity)
-    private readonly lojaRepository: Repository<LojaEntity>,
     private readonly utils: Utils,
+    // private readonly queryRunner: QueryRunner
   ) { }
 
   async cadastrarProduto(produto: any): Promise<TRetornoObjetoResponse> {
@@ -81,7 +80,7 @@ export class ProdutoService {
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtos);
   }
 
-  async buscarProduto(produtoId: number, req: Request) {
+  async buscarProduto(produtoId: number, req: Request): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
     let produto = (req.query.loja && req.query.loja === 'true') ?
       await this.produtoRepository
@@ -113,7 +112,7 @@ export class ProdutoService {
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produto);
   }
 
-  async excluirProduto(req: Request = null) {
+  async excluirProduto(req: Request = null): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
 
     if (req.query.id_loja && req.query.id_loja !== 'null') {
@@ -176,5 +175,43 @@ export class ProdutoService {
     }
 
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, null);
+  }
+
+  async editarProduto(produto: any): Promise<TRetornoObjetoResponse> {
+    const arrayErros = [];
+    const objProduto = {
+      id: produto.id,
+      descricao: produto.descricao,
+      custo: produto.custo,
+      imagem: produto.imagem == '' ? null : produto.imagem
+    }
+    const arrayLojaVenda = produto.lojas_preco
+
+    const produtoSalvo = await this.produtoRepository.save(objProduto);
+
+    if (!this.utils.ValidarObjeto(produtoSalvo)) {
+      arrayErros.push({
+        codigo: '0.00',
+        descricao: 'Erro ao editar produto.',
+      });
+
+      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
+    }
+
+    if (arrayLojaVenda.length) {
+      for (let i = 0; i < arrayLojaVenda.length; i++) {
+        const objProdutoLoja = {
+          id_produto: produto.id,
+          id_loja: arrayLojaVenda[i].id_loja,
+          preco_venda: arrayLojaVenda[i].preco_venda
+        }
+
+        await this.produtoLojaRepository.save(objProdutoLoja)
+      }
+    } else {
+      return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+    }
+
+    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
   }
 }
