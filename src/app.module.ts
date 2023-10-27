@@ -8,7 +8,6 @@ import { PostgresConfigService } from './configs/postgres.config.service';
 import { TesteModule } from './teste/teste.module';
 import { ProdutoModule } from './modules/produto.module';
 import { Validators } from './schemas/validators';
-import { ProdutoLojaModule } from './modules/produto-loja.module';
 
 @Module({
   imports: [
@@ -21,8 +20,7 @@ import { ProdutoLojaModule } from './modules/produto-loja.module';
     }),
     LojaModule,
     TesteModule,
-    ProdutoModule,
-    ProdutoLojaModule
+    ProdutoModule
   ],
   controllers: [AppController],
   providers: [AppService, Validators],

@@ -9,6 +9,7 @@ import { TRetornoObjetoResponse } from 'src/utils/@types/sistema.types';
 import { LojaEntity } from 'src/entities/loja.entity';
 import { Request } from 'express';
 import dataSource from 'src/database/data-source-cli';
+import { TProdutoCadastro } from './@Types/produto.types';
 
 @Injectable()
 export class ProdutoService {
@@ -25,15 +26,15 @@ export class ProdutoService {
     const arrayErros = [];
     const objProduto = {
       descricao: produto.descricao,
-      custo: produto.custo,
-      imagem: produto.imagem
-    }
-    const arrayLojaVenda = produto.lojas_preco
+      custo: produto.custo == '' ? null : produto.custo,
+      imagem: produto.imagem == '' ? null : produto.imagem,
+    };
+    const arrayLojaVenda = produto.lojas_preco;
 
     // try {
     const produtoSalvo = await this.produtoRepository.save(objProduto);
 
-    if (!this.utils.ValidarObjeto(produtoSalvo)) {
+    if (!produtoSalvo.id || !this.utils.ValidarObjeto(produtoSalvo)) {
       arrayErros.push({
         codigo: '0.00',
         descricao: 'Erro ao salvar produto.',
@@ -45,12 +46,12 @@ export class ProdutoService {
     if (arrayLojaVenda.length) {
       for (let i = 0; i < arrayLojaVenda.length; i++) {
         const objProdutoLoja = {
-          id_produto: produto.id_produto,
+          id_produto: produtoSalvo.id,
           id_loja: arrayLojaVenda[i].id_loja,
-          preco_venda: arrayLojaVenda[i].preco_venda
-        }
+          preco_venda: arrayLojaVenda[i].preco_venda,
+        };
 
-        await this.produtoLojaRepository.save(objProdutoLoja)
+        await this.produtoLojaRepository.save(objProdutoLoja);
       }
     } else {
       return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
@@ -82,23 +83,23 @@ export class ProdutoService {
 
   async buscarProduto(produtoId: number, req: Request): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    let produto = (req.query.loja && req.query.loja === 'true') ?
-      await this.produtoRepository
-        .createQueryBuilder('p')
-        .select('p.*')
-        .addSelect('p.descricao as prod_desc')
-        .addSelect('p.custo as prod_custo')
-        .addSelect('l.descricao as loja_desc')
-        .addSelect('l.id as id_loja')
-        .addSelect('pl.preco_venda as preco_venda')
-        .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
-        .leftJoin('loja', 'l', 'l.id = pl.id_loja')
-        .where({ id: produtoId })
-        .getRawMany()
-      :
-      await this.produtoRepository.findOne({
-        where: { id: produtoId },
-      });
+    let produto =
+      req.query.loja && req.query.loja === 'true'
+        ? await this.produtoRepository
+          .createQueryBuilder('p')
+          .select('p.*')
+          .addSelect('p.descricao as prod_desc')
+          .addSelect('p.custo as prod_custo')
+          .addSelect('l.descricao as loja_desc')
+          .addSelect('l.id as id_loja')
+          .addSelect('pl.preco_venda as preco_venda')
+          .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
+          .leftJoin('loja', 'l', 'l.id = pl.id_loja')
+          .where({ id: produtoId })
+          .getRawMany()
+        : await this.produtoRepository.findOne({
+          where: { id: produtoId },
+        });
 
     if (!this.utils.ValidarObjeto(produto)) {
       arrayErros.push({
@@ -121,7 +122,7 @@ export class ProdutoService {
         .delete()
         .where({ id_loja: req.query.id_loja })
         .andWhere({ id_produto: req.query.id_produto })
-        .execute()
+        .execute();
 
       if (produtoLojaExcluido.affected < 0) {
         arrayErros.push({
@@ -160,32 +161,15 @@ export class ProdutoService {
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, null);
   }
 
-  async excluirProdutoLoja(lojaId: number) {
-    const arrayErros = [];
-
-    const produtoExcluido = await this.produtoLojaRepository.delete(lojaId);
-
-    if (produtoExcluido.affected < 0) {
-      arrayErros.push({
-        codigo: '0.00',
-        descricao: 'Erro ao excluir vinculo.',
-      });
-
-      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
-    }
-
-    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, null);
-  }
-
   async editarProduto(produto: any): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    const objProduto = {
+    const objProduto: ProdutoEntity = {
       id: produto.id,
-      descricao: produto.descricao,
+      descricao: produto.descricao ?? '',
       custo: produto.custo,
-      imagem: produto.imagem == '' ? null : produto.imagem
-    }
-    const arrayLojaVenda = produto.lojas_preco
+      imagem: produto.imagem == '' ? null : produto.imagem,
+    };
+    const arrayLojaVenda = produto.lojas_preco;
 
     const produtoSalvo = await this.produtoRepository.save(objProduto);
 
@@ -198,20 +182,41 @@ export class ProdutoService {
       return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
     }
 
-    if (arrayLojaVenda.length) {
+    const vinculoLojaExcluido = await this.excluirProdutoLoja(produtoSalvo.id);
+
+    if (vinculoLojaExcluido && arrayLojaVenda.length) {
       for (let i = 0; i < arrayLojaVenda.length; i++) {
         const objProdutoLoja = {
           id_produto: produto.id,
           id_loja: arrayLojaVenda[i].id_loja,
-          preco_venda: arrayLojaVenda[i].preco_venda
-        }
+          preco_venda: arrayLojaVenda[i].preco_venda,
+        };
 
-        await this.produtoLojaRepository.save(objProdutoLoja)
+        await this.produtoLojaRepository.save(objProdutoLoja);
       }
     } else {
       return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
     }
 
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
+  }
+
+  private async excluirProdutoLoja(produtoId: number) {
+    const arrayErros = [];
+
+    const produtoExcluido = await this.produtoLojaRepository.delete({
+      id_produto: produtoId,
+    });
+
+    if (produtoExcluido.affected < 0) {
+      arrayErros.push({
+        codigo: '0.00',
+        descricao: 'Erro ao excluir vinculo.',
+      });
+
+      return false;
+    }
+
+    return true;
   }
 }

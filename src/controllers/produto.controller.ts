@@ -22,6 +22,8 @@ export class ProdutoController {
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
+        case eStatusHTTP.NAO_LOCALIZADO:
+          return await this.responseService.NotFoundResult(response, objRetorno);
         case eStatusHTTP.ERRO_SERVIDOR:
           return await this.responseService.ServerErrorResult(response, objRetorno);
       }
@@ -39,6 +41,8 @@ export class ProdutoController {
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
+        case eStatusHTTP.NAO_LOCALIZADO:
+          return await this.responseService.NotFoundResult(response, objRetorno);
         case eStatusHTTP.ERRO_SERVIDOR:
           return await this.responseService.ServerErrorResult(response, objRetorno);
       }
@@ -58,6 +62,8 @@ export class ProdutoController {
           return await this.responseService.OkObjectResult(response, objRetorno);
         case eStatusHTTP.NAO_LOCALIZADO:
           return await this.responseService.NotFoundResult(response, objRetorno);
+        case eStatusHTTP.ERRO_SERVIDOR:
+          return await this.responseService.ServerErrorResult(response, objRetorno);
       }
     } catch (error) {
       const objRetorno = this.utils.TratarErros(error);
@@ -90,10 +96,10 @@ export class ProdutoController {
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
-        case eStatusHTTP.ERRO_SERVIDOR:
-          return await this.responseService.ServerErrorResult(response, objRetorno);
         case eStatusHTTP.NAO_LOCALIZADO:
           return await this.responseService.NotFoundResult(response, objRetorno);
+        case eStatusHTTP.ERRO_SERVIDOR:
+          return await this.responseService.ServerErrorResult(response, objRetorno);
       }
     } catch (error) {
       const objRetorno = this.utils.TratarErros(error);

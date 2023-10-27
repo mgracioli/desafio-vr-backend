@@ -32,7 +32,11 @@ export class LojaService {
 
   async buscarLoja(lojaId: number): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    const loja = await this.lojaRepository.findOneBy({ id: lojaId });
+    const loja = await this.lojaRepository.findOne({
+      where: {
+        id: lojaId
+      }
+    });
 
     if (!this.utils.ValidarObjeto(loja)) {
       arrayErros.push({
