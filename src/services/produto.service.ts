@@ -73,7 +73,7 @@ export class ProdutoService {
 
   async buscarProdutos({ page, limit }): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    const produtos = await this.produtoRepository.find({
+    const [produtos, total] = await this.produtoRepository.findAndCount({
       skip: limit * page,
       take: limit,
       order: { id: 'ASC' }
@@ -88,32 +88,31 @@ export class ProdutoService {
       return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
     }
 
-    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtos);
+    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, [...produtos, { total: total }]);
   }
 
-  async buscarProduto(produtoId: number, loja: string, page: number = 1, limit: number = 100): Promise<TRetornoObjetoResponse> {
+  async buscarProduto(produtoId: number, loja: string): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    let produto =
-      loja === 'true'
-        ? await this.produtoRepository
-          .createQueryBuilder('p')
-          .select('p.id as id')
-          .addSelect('p.imagem as imagem')
-          .addSelect('p.descricao as prod_desc')
-          .addSelect('p.custo as prod_custo')
-          .addSelect('l.descricao as loja_desc')
-          .addSelect('l.id as id_loja')
-          .addSelect('pl.preco_venda as preco_venda')
-          .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
-          .leftJoin('loja', 'l', 'l.id = pl.id_loja')
-          .orderBy('id_loja', 'ASC')
-          .where({ id: produtoId })
-          .skip(limit * page)
-          .take(limit)
-          .getRawMany()
-        : await this.produtoRepository.findOne({
-          where: { id: produtoId },
-        });
+
+    let produto = loja === 'true' ?
+      await this.produtoRepository
+        .createQueryBuilder('p')
+        .select('p.id as id')
+        .addSelect('p.imagem as imagem')
+        .addSelect('p.descricao as prod_desc')
+        .addSelect('p.custo as prod_custo')
+        .addSelect('l.descricao as loja_desc')
+        .addSelect('l.id as id_loja')
+        .addSelect('pl.preco_venda as preco_venda')
+        .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
+        .leftJoin('loja', 'l', 'l.id = pl.id_loja')
+        .orderBy('id_loja', 'ASC')
+        .where({ id: produtoId })
+        .getRawMany()
+      :
+      await this.produtoRepository.findOne({
+        where: { id: produtoId },
+      });
 
     if (!this.utils.ValidarObjeto(produto)) {
       arrayErros.push({

@@ -52,9 +52,9 @@ export class ProdutoController {
   }
 
   @Get(':id')
-  async buscarProduto(@Query('page') page = 1, @Query('limit') limit = 100, @Query('loja') loja = 'true', @Param('id') produtoId: string, @Res() response: Response): Promise<Response> {
+  async buscarProduto(@Query('loja') loja = 'true', @Param('id') produtoId: string, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProduto(+produtoId, loja, page, limit);
+      const objRetorno = await this.produtoService.buscarProduto(+produtoId, loja);
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
