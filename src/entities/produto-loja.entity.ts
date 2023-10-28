@@ -4,12 +4,13 @@ import {
   PrimaryGeneratedColumn,
   JoinColumn,
   ManyToOne,
+  BaseEntity,
 } from 'typeorm';
 import { ProdutoEntity } from './produto.entity';
 import { LojaEntity } from './loja.entity';
 
 @Entity({ name: 'produtoloja' })
-export class ProdutoLojaEntity {
+export class ProdutoLojaEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

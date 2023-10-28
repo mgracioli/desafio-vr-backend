@@ -1,5 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Req, Res } from '@nestjs/common';
-import { ProdutoSchema } from 'src/schemas/produto.schema';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
 import { eStatusHTTP } from 'src/services/@enums/response.enum';
 import { ProdutoService } from 'src/services/produto.service';
 import { ResponseService } from 'src/services/response.service';
@@ -53,10 +52,9 @@ export class ProdutoController {
   }
 
   @Get(':id')
-  async buscarProduto(@Param('id') id: string, @Req() request: Request, @Res() response: Response): Promise<Response> {
+  async buscarProduto(@Query('page') page = 1, @Query('limit') limit = 100, @Query('loja') loja = 'true', @Param('id') produtoId: string, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProduto(+id, request);
-
+      const objRetorno = await this.produtoService.buscarProduto(+produtoId, loja, page, limit);
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
@@ -72,10 +70,10 @@ export class ProdutoController {
   }
 
   @Get()
-  async buscarProdutos(@Res() response: Response): Promise<Response> {
+  async buscarProdutos(@Query('page') page = 1, @Query('limit') limit = 100, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProdutos();
-
+      const objRetorno = await this.produtoService.buscarProdutos({ page, limit });
+      // return objRetorno
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);

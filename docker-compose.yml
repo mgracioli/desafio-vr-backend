@@ -6,7 +6,7 @@ services:
     image: mrg/desafiovrbackend:1.0.0
     build: .
     ports:
-      - 3000:${SERVER_PORT}
+      - 3000:3000
     environment:
       DB_TYPE: postgres
       DB_HOST: database

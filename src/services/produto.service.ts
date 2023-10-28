@@ -2,14 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProdutoEntity } from 'src/entities/produto.entity';
 import { ProdutoLojaEntity } from 'src/entities/produto-loja.entity';
-import { Repository, getConnection, QueryRunner } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { eStatusHTTP } from './@enums/response.enum';
 import { Utils } from 'src/utils/sistema.utils';
 import { TRetornoObjetoResponse } from 'src/utils/@types/sistema.types';
-import { LojaEntity } from 'src/entities/loja.entity';
 import { Request } from 'express';
-import dataSource from 'src/database/data-source-cli';
-import { TProdutoCadastro } from './@Types/produto.types';
 
 @Injectable()
 export class ProdutoService {
@@ -19,55 +16,68 @@ export class ProdutoService {
     @InjectRepository(ProdutoLojaEntity)
     private readonly produtoLojaRepository: Repository<ProdutoLojaEntity>,
     private readonly utils: Utils,
+    private readonly entitiManager: EntityManager
     // private readonly queryRunner: QueryRunner
   ) { }
 
   async cadastrarProduto(produto: any): Promise<TRetornoObjetoResponse> {
+
+    const queryRunner = this.entitiManager.connection.createQueryRunner()
+    await queryRunner.startTransaction()
+
     const arrayErros = [];
     const objProduto = {
-      descricao: produto.descricao,
+      descricao: produto.descricao ?? '',
       custo: produto.custo == '' ? null : produto.custo,
       imagem: produto.imagem == '' ? null : produto.imagem,
     };
     const arrayLojaVenda = produto.lojas_preco;
 
-    // try {
-    const produtoSalvo = await this.produtoRepository.save(objProduto);
+    try {
+      const produtoSalvo = await this.produtoRepository.save(objProduto);
 
-    if (!produtoSalvo.id || !this.utils.ValidarObjeto(produtoSalvo)) {
-      arrayErros.push({
-        codigo: '0.00',
-        descricao: 'Erro ao salvar produto.',
-      });
+      if (!produtoSalvo.id || !this.utils.ValidarObjeto(produtoSalvo)) {
+        arrayErros.push({
+          codigo: '0.00',
+          descricao: 'Erro ao salvar produto.',
+        });
 
-      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
-    }
-
-    if (arrayLojaVenda.length) {
-      for (let i = 0; i < arrayLojaVenda.length; i++) {
-        const objProdutoLoja = {
-          id_produto: produtoSalvo.id,
-          id_loja: arrayLojaVenda[i].id_loja,
-          preco_venda: arrayLojaVenda[i].preco_venda,
-        };
-
-        await this.produtoLojaRepository.save(objProdutoLoja);
+        return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
       }
-    } else {
-      return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
-    }
 
-    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
-    // } catch {
-    //   return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
-    // } finally {
-    //   //xxxxxxxxxxxxxxxxxxxxx
-    // }
+      if (arrayLojaVenda.length) {
+        for (let i = 0; i < arrayLojaVenda.length; i++) {
+          const objProdutoLoja = {
+            // id_produto: produtoSalvo.id,
+            id_produto: 999,
+            id_loja: arrayLojaVenda[i].id_loja,
+            preco_venda: arrayLojaVenda[i].preco_venda,
+          };
+
+          await this.produtoLojaRepository.save(objProdutoLoja);
+        }
+      } else {
+        return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+      }
+
+      queryRunner.commitTransaction()
+      return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
+    } catch {
+      queryRunner.rollbackTransaction()
+      return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
+    } finally {
+      //xxxxxxxxxxxxxxxxxxxxx
+      queryRunner.release()
+    }
   }
 
-  async buscarProdutos(): Promise<TRetornoObjetoResponse> {
+  async buscarProdutos({ page, limit }): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    const produtos = await this.produtoRepository.find();
+    const produtos = await this.produtoRepository.find({
+      skip: limit * page,
+      take: limit,
+      order: { id: 'ASC' }
+    })
 
     if (!this.utils.ValidarObjeto(produtos)) {
       arrayErros.push({
@@ -81,13 +91,14 @@ export class ProdutoService {
     return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtos);
   }
 
-  async buscarProduto(produtoId: number, req: Request): Promise<TRetornoObjetoResponse> {
+  async buscarProduto(produtoId: number, loja: string, page: number = 1, limit: number = 100): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
     let produto =
-      req.query.loja && req.query.loja === 'true'
+      loja === 'true'
         ? await this.produtoRepository
           .createQueryBuilder('p')
-          .select('p.*')
+          .select('p.id as id')
+          .addSelect('p.imagem as imagem')
           .addSelect('p.descricao as prod_desc')
           .addSelect('p.custo as prod_custo')
           .addSelect('l.descricao as loja_desc')
@@ -95,7 +106,10 @@ export class ProdutoService {
           .addSelect('pl.preco_venda as preco_venda')
           .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
           .leftJoin('loja', 'l', 'l.id = pl.id_loja')
+          .orderBy('id_loja', 'ASC')
           .where({ id: produtoId })
+          .skip(limit * page)
+          .take(limit)
           .getRawMany()
         : await this.produtoRepository.findOne({
           where: { id: produtoId },
@@ -133,7 +147,7 @@ export class ProdutoService {
         return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
       }
     } else if (req.query.id_produto && req.query.id_produto !== 'null') {
-      const produto = await this.buscarProduto(+req.query.id_produto, req);
+      const produto = await this.buscarProduto(+req.query.id_produto, 'false');
 
       if (!(produto.codigo_status === eStatusHTTP.SUCESSO)) {
         return produto;
@@ -163,7 +177,7 @@ export class ProdutoService {
 
   async editarProduto(produto: any): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
-    const objProduto: ProdutoEntity = {
+    const objProduto: any = {
       id: produto.id,
       descricao: produto.descricao ?? '',
       custo: produto.custo,
