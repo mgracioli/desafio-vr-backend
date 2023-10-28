@@ -52,9 +52,29 @@ export class ProdutoController {
   }
 
   @Get(':id')
-  async buscarProduto(@Query('loja') loja = 'true', @Param('id') produtoId: string, @Res() response: Response): Promise<Response> {
+  async buscarProduto(@Param('id') produtoId: string, @Res() response: Response): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProduto(+produtoId, loja);
+      const objRetorno = await this.produtoService.buscarProduto(+produtoId);
+
+      switch (objRetorno.codigo_status) {
+        case eStatusHTTP.SUCESSO:
+          return await this.responseService.OkObjectResult(response, objRetorno);
+        case eStatusHTTP.NAO_LOCALIZADO:
+          return await this.responseService.NotFoundResult(response, objRetorno);
+        case eStatusHTTP.ERRO_SERVIDOR:
+          return await this.responseService.ServerErrorResult(response, objRetorno);
+      }
+    } catch (error) {
+      const objRetorno = this.utils.TratarErros(error);
+      return await this.responseService.ServerErrorResult(response, objRetorno);
+    }
+  }
+
+  @Get('/produtoloja/:id')
+  async buscarProdutoLoja(@Param('id') produtoId: string, @Res() response: Response): Promise<Response> {
+    try {
+      const objRetorno = await this.produtoService.buscarProdutoLoja(+produtoId);
+
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:
           return await this.responseService.OkObjectResult(response, objRetorno);
@@ -70,9 +90,16 @@ export class ProdutoController {
   }
 
   @Get()
-  async buscarProdutos(@Query('page') page = 1, @Query('limit') limit = 100, @Res() response: Response): Promise<Response> {
+  async buscarProdutos(
+    @Query('page') page = 1,
+    @Query('limit') limit = 100,
+    @Query('descricao') descricao = '',
+    @Query('custo') custo = '',
+    @Query('precoVenda') precoVenda = '',
+    @Res() response: Response
+  ): Promise<Response> {
     try {
-      const objRetorno = await this.produtoService.buscarProdutos({ page, limit });
+      const objRetorno = await this.produtoService.buscarProdutos({ page, limit, descricao, custo, precoVenda });
       // return objRetorno
       switch (objRetorno.codigo_status) {
         case eStatusHTTP.SUCESSO:

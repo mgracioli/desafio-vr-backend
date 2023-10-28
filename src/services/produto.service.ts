@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProdutoEntity } from 'src/entities/produto.entity';
 import { ProdutoLojaEntity } from 'src/entities/produto-loja.entity';
-import { Repository, EntityManager } from 'typeorm';
+import { Repository, EntityManager, Like } from 'typeorm';
 import { eStatusHTTP } from './@enums/response.enum';
 import { Utils } from 'src/utils/sistema.utils';
 import { TRetornoObjetoResponse } from 'src/utils/@types/sistema.types';
@@ -71,48 +71,91 @@ export class ProdutoService {
     }
   }
 
-  async buscarProdutos({ page, limit }): Promise<TRetornoObjetoResponse> {
+  async buscarProdutos({ page, limit, descricao, custo, precoVenda }): Promise<TRetornoObjetoResponse> {
+    enum campos { DESCRICAO, CUSTO, PRECOVENDA }
     const arrayErros = [];
-    const [produtos, total] = await this.produtoRepository.findAndCount({
-      skip: limit * page,
-      take: limit,
-      order: { id: 'ASC' }
-    })
+    const idx = Array(descricao, custo, precoVenda).findIndex(campo => campo !== '')
 
-    if (!this.utils.ValidarObjeto(produtos)) {
+    if (idx == campos.PRECOVENDA) {
+      // let relation = {}
+
+      // const [produtos, total] = await this.produtoRepository.findAndCount({
+      //   where: {'custo': custo},
+      //   skip: limit * page,
+      //   take: limit,
+      //   order: { id: 'ASC' }
+      // })
+
+    } else {
+      let clausulaWhere = {}
+
+      switch (idx) {
+        case campos.DESCRICAO:
+          clausulaWhere = { 'descricao': Like('%' + descricao + '%') };
+          break;
+        case campos.CUSTO:
+          clausulaWhere = { 'custo': custo };
+          break
+        default:
+          clausulaWhere = {};
+      }
+
+      const [produtos, total] = await this.produtoRepository.findAndCount({
+        where: clausulaWhere,
+        skip: limit * page,
+        take: limit,
+        order: { id: 'ASC' }
+      })
+
+      if (!this.utils.ValidarObjeto(produtos)) {
+        arrayErros.push({
+          codigo: '0.00',
+          descricao: 'Nenhum produto localizado.',
+        });
+
+        return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+      }
+
+      return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, [...produtos, { total: total }]);
+    }
+  }
+
+  async buscarProduto(produtoId: number): Promise<TRetornoObjetoResponse> {
+    const arrayErros = [];
+
+    const produto = await this.produtoRepository.findOne({
+      where: { id: produtoId },
+    });
+
+    if (!this.utils.ValidarObjeto(produto)) {
       arrayErros.push({
         codigo: '0.00',
-        descricao: 'Nenhum produto localizado.',
+        descricao: 'Produto não localizado.',
       });
 
       return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
     }
 
-    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, [...produtos, { total: total }]);
+    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produto);
   }
 
-  async buscarProduto(produtoId: number, loja: string): Promise<TRetornoObjetoResponse> {
+  async buscarProdutoLoja(produtoId: number): Promise<TRetornoObjetoResponse> {
     const arrayErros = [];
 
-    let produto = loja === 'true' ?
-      await this.produtoRepository
-        .createQueryBuilder('p')
-        .select('p.id as id')
-        .addSelect('p.imagem as imagem')
-        .addSelect('p.descricao as prod_desc')
-        .addSelect('p.custo as prod_custo')
-        .addSelect('l.descricao as loja_desc')
-        .addSelect('l.id as id_loja')
-        .addSelect('pl.preco_venda as preco_venda')
-        .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
-        .leftJoin('loja', 'l', 'l.id = pl.id_loja')
-        .orderBy('id_loja', 'ASC')
-        .where({ id: produtoId })
-        .getRawMany()
-      :
-      await this.produtoRepository.findOne({
-        where: { id: produtoId },
-      });
+    const produto = await this.produtoRepository
+      .createQueryBuilder('p')
+      .select('p.id as id')
+      .addSelect('p.imagem as imagem')
+      .addSelect('p.descricao as prod_desc')
+      .addSelect('p.custo as prod_custo')
+      .addSelect('l.descricao as loja_desc')
+      .addSelect('l.id as id_loja')
+      .addSelect('pl.preco_venda as preco_venda')
+      .leftJoin('produtoloja', 'pl', 'p.id = pl.id_produto')
+      .leftJoin('loja', 'l', 'l.id = pl.id_loja')
+      .orderBy('id_loja', 'ASC')
+      .where({ id: produtoId })
+      .getRawMany()
 
     if (!this.utils.ValidarObjeto(produto)) {
       arrayErros.push({
@@ -146,7 +189,7 @@ export class ProdutoService {
         return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
       }
     } else if (req.query.id_produto && req.query.id_produto !== 'null') {
-      const produto = await this.buscarProduto(+req.query.id_produto, 'false');
+      const produto = await this.buscarProduto(+req.query.id_produto);
 
       if (!(produto.codigo_status === eStatusHTTP.SUCESSO)) {
         return produto;
@@ -179,7 +222,7 @@ export class ProdutoService {
     const objProduto: any = {
       id: produto.id,
       descricao: produto.descricao ?? '',
-      custo: produto.custo,
+      custo: produto.custo ?? '',
       imagem: produto.imagem == '' ? null : produto.imagem,
     };
     const arrayLojaVenda = produto.lojas_preco;
