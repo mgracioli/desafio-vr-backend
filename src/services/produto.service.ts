@@ -22,8 +22,8 @@ export class ProdutoService {
 
   async cadastrarProduto(produto: any): Promise<TRetornoObjetoResponse> {
 
-    const queryRunner = this.entitiManager.connection.createQueryRunner()
-    await queryRunner.startTransaction()
+    // const queryRunner = this.entitiManager.connection.createQueryRunner()
+    // await queryRunner.startTransaction()
 
     const arrayErros = [];
     const objProduto = {
@@ -48,8 +48,7 @@ export class ProdutoService {
       if (arrayLojaVenda.length) {
         for (let i = 0; i < arrayLojaVenda.length; i++) {
           const objProdutoLoja = {
-            // id_produto: produtoSalvo.id,
-            id_produto: 999,
+            id_produto: produtoSalvo.id,
             id_loja: arrayLojaVenda[i].id_loja,
             preco_venda: arrayLojaVenda[i].preco_venda,
           };
@@ -57,17 +56,27 @@ export class ProdutoService {
           await this.produtoLojaRepository.save(objProdutoLoja);
         }
       } else {
+        arrayErros.push({
+          codigo: '0.00',
+          descricao: 'Erro ao salvar vínculo de loja: "Nenhuma loja definida".',
+        });
+
         return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
       }
 
-      queryRunner.commitTransaction()
+      // queryRunner.commitTransaction()
       return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
-    } catch {
-      queryRunner.rollbackTransaction()
+    } catch (erro) {
+      // queryRunner.rollbackTransaction()
+      arrayErros.push({
+        codigo: '0.00',
+        descricao: erro.message,
+      });
+
       return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
     } finally {
       //xxxxxxxxxxxxxxxxxxxxx
-      queryRunner.release()
+      // queryRunner.release()
     }
   }
 
@@ -225,7 +234,7 @@ export class ProdutoService {
     const objProduto: any = {
       id: produto.id,
       descricao: produto.descricao ?? '',
-      custo: produto.custo ?? '',
+      custo: produto.custo === '' ? null : +produto.custo,
       imagem: produto.imagem == '' ? null : produto.imagem,
     };
     const arrayLojaVenda = produto.lojas_preco;
@@ -248,7 +257,7 @@ export class ProdutoService {
         const objProdutoLoja = {
           id_produto: produto.id,
           id_loja: arrayLojaVenda[i].id_loja,
-          preco_venda: arrayLojaVenda[i].preco_venda,
+          preco_venda: arrayLojaVenda[i].preco_venda === '' ? null : arrayLojaVenda[i].preco_venda,
         };
 
         await this.produtoLojaRepository.save(objProdutoLoja);

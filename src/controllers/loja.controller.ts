@@ -29,21 +29,4 @@ export class LojaController {
       return await this.responseService.ServerErrorResult(response, objRetorno);
     }
   }
-
-  @Get(':id')
-  async buscarLoja(@Param('id') id: string, @Res() response: Response): Promise<Response> {
-    try {
-      const objRetorno = await this.lojaService.buscarLoja(+id);
-
-      switch (objRetorno.codigo_status) {
-        case eStatusHTTP.SUCESSO:
-          return await this.responseService.OkObjectResult(response, objRetorno);
-        case eStatusHTTP.NAO_LOCALIZADO:
-          return await this.responseService.NotFoundResult(response, objRetorno);
-      }
-    } catch (error) {
-      const objRetorno = this.utils.TratarErros(error);
-      return await this.responseService.ServerErrorResult(response, objRetorno);
-    }
-  }
 }
