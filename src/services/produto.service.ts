@@ -71,10 +71,10 @@ export class ProdutoService {
     }
   }
 
-  async buscarProdutos({ page, limit, descricao, custo, precoVenda }): Promise<TRetornoObjetoResponse> {
-    enum campos { DESCRICAO, CUSTO, PRECOVENDA }
+  async buscarProdutos({ page, limit, id, descricao, custo, precoVenda }): Promise<TRetornoObjetoResponse> {
+    enum campos { ID, DESCRICAO, CUSTO, PRECOVENDA }
     const arrayErros = [];
-    const idx = Array(descricao, custo, precoVenda).findIndex(campo => campo !== '')
+    const idx = Array(id, descricao, custo, precoVenda).findIndex(campo => campo !== '')
 
     if (idx == campos.PRECOVENDA) {
       // let relation = {}
@@ -90,6 +90,9 @@ export class ProdutoService {
       let clausulaWhere = {}
 
       switch (idx) {
+        case campos.ID:
+          clausulaWhere = { 'id': id };
+          break;
         case campos.DESCRICAO:
           clausulaWhere = { 'descricao': Like('%' + descricao + '%') };
           break;
