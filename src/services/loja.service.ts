@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
 import { LojaEntity } from 'src/entities/loja.entity';
 import { TRetornoObjetoResponse } from 'src/utils/@types/sistema.types';
 import { Utils } from 'src/utils/sistema.utils';
-import { Repository } from 'typeorm';
 import { eStatusHTTP } from './@enums/response.enum';
 
 @Injectable()

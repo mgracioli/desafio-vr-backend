@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Request } from 'express';
+
 import { ProdutoEntity } from 'src/entities/produto.entity';
 import { ProdutoLojaEntity } from 'src/entities/produto-loja.entity';
 import { Repository, Like } from 'typeorm';
 import { eStatusHTTP } from './@enums/response.enum';
 import { Utils } from 'src/utils/sistema.utils';
 import { TRetornoObjetoResponse } from 'src/utils/@types/sistema.types';
-import { Request } from 'express';
 
 @Injectable()
 export class ProdutoService {

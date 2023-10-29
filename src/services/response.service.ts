@@ -1,6 +1,7 @@
-import { TRetornoObjetoResponse } from "src/utils/@types/sistema.types";
 import { HttpStatus } from '@nestjs/common'
 import { Response } from 'express';
+
+import { TRetornoObjetoResponse } from "src/utils/@types/sistema.types";
 
 export class ResponseService {
   /**
