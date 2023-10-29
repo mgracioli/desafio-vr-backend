@@ -1,19 +1,4 @@
 services:
-  backend:
-    container_name: desafiovrbackend
-    image: mrg/desafiovrbackend:1.0.0
-    build: .
-    ports:
-      - '${SERVER_PORT}:${SERVER_PORT}'
-    environment:
-      DB_TYPE: postgres
-      DB_HOST: database
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_PORT: ${DB_PORT}
-    depends_on:
-      - database
   database:
     container_name: desafiovrpostgres
     image: postgres
@@ -23,9 +8,6 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      PGDATA: /var/lib/postgresql/data
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
     restart: unless-stopped
-volumes:
-  pgdata:

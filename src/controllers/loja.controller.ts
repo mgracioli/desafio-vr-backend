@@ -1,10 +1,10 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
+
 import { eStatusHTTP } from 'src/services/@enums/response.enum';
 import { LojaService } from 'src/services/loja.service';
 import { ResponseService } from 'src/services/response.service';
 import { Utils } from 'src/utils/sistema.utils';
-
 @Controller('/loja')
 export class LojaController {
   constructor(

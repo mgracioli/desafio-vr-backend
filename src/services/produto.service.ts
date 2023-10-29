@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProdutoEntity } from 'src/entities/produto.entity';
 import { ProdutoLojaEntity } from 'src/entities/produto-loja.entity';
-import { Repository, EntityManager, Like } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { eStatusHTTP } from './@enums/response.enum';
 import { Utils } from 'src/utils/sistema.utils';
 import { TRetornoObjetoResponse } from 'src/utils/@types/sistema.types';
@@ -16,14 +16,9 @@ export class ProdutoService {
     @InjectRepository(ProdutoLojaEntity)
     private readonly produtoLojaRepository: Repository<ProdutoLojaEntity>,
     private readonly utils: Utils,
-    private readonly entitiManager: EntityManager
-    // private readonly queryRunner: QueryRunner
   ) { }
 
   async cadastrarProduto(produto: any): Promise<TRetornoObjetoResponse> {
-
-    // const queryRunner = this.entitiManager.connection.createQueryRunner()
-    // await queryRunner.startTransaction()
 
     const arrayErros = [];
     const objProduto = {
@@ -31,6 +26,7 @@ export class ProdutoService {
       custo: produto.custo == '' ? null : produto.custo,
       imagem: produto.imagem == '' ? null : produto.imagem,
     };
+
     const arrayLojaVenda = produto.lojas_preco;
 
     try {
@@ -64,19 +60,14 @@ export class ProdutoService {
         return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
       }
 
-      // queryRunner.commitTransaction()
       return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, produtoSalvo);
     } catch (erro) {
-      // queryRunner.rollbackTransaction()
       arrayErros.push({
         codigo: '0.00',
-        descricao: erro.message,
+        descricao: erro.message ?? erro.detail,
       });
 
       return this.utils.MontarJsonRetorno(eStatusHTTP.ERRO_SERVIDOR, arrayErros);
-    } finally {
-      //xxxxxxxxxxxxxxxxxxxxx
-      // queryRunner.release()
     }
   }
 
@@ -85,51 +76,39 @@ export class ProdutoService {
     const arrayErros = [];
     const idx = Array(id, descricao, custo, precoVenda).findIndex(campo => campo !== '')
 
-    if (idx == campos.PRECOVENDA) {
-      // let relation = {}
+    let clausulaWhere = {}
 
-      // const [produtos, total] = await this.produtoRepository.findAndCount({
-      //   where: {'custo': custo},
-      //   skip: limit * page,
-      //   take: limit,
-      //   order: { id: 'ASC' }
-      // })
-
-    } else {
-      let clausulaWhere = {}
-
-      switch (idx) {
-        case campos.ID:
-          clausulaWhere = { 'id': id };
-          break;
-        case campos.DESCRICAO:
-          clausulaWhere = { 'descricao': Like('%' + descricao + '%') };
-          break;
-        case campos.CUSTO:
-          clausulaWhere = { 'custo': custo };
-          break
-        default:
-          clausulaWhere = {};
-      }
-
-      const [produtos, total] = await this.produtoRepository.findAndCount({
-        where: clausulaWhere,
-        skip: limit * page,
-        take: limit,
-        order: { id: 'ASC' }
-      })
-
-      if (!this.utils.ValidarObjeto(produtos)) {
-        arrayErros.push({
-          codigo: '0.00',
-          descricao: 'Nenhum produto localizado.',
-        });
-
-        return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
-      }
-
-      return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, [...produtos, { total: total }]);
+    switch (idx) {
+      case campos.ID:
+        clausulaWhere = { 'id': id };
+        break;
+      case campos.DESCRICAO:
+        clausulaWhere = { 'descricao': Like('%' + descricao + '%') };
+        break;
+      case campos.CUSTO:
+        clausulaWhere = { 'custo': custo };
+        break
+      default:
+        clausulaWhere = {};
     }
+
+    const [produtos, total] = await this.produtoRepository.findAndCount({
+      where: clausulaWhere,
+      skip: limit * page,
+      take: limit,
+      order: { id: 'ASC' }
+    })
+
+    if (!this.utils.ValidarObjeto(produtos)) {
+      arrayErros.push({
+        codigo: '0.00',
+        descricao: 'Nenhum produto localizado.',
+      });
+
+      return this.utils.MontarJsonRetorno(eStatusHTTP.NAO_LOCALIZADO, arrayErros);
+    }
+
+    return this.utils.MontarJsonRetorno(eStatusHTTP.SUCESSO, [...produtos, { total: total }]);
   }
 
   async buscarProduto(produtoId: number): Promise<TRetornoObjetoResponse> {

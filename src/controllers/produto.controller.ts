@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { Response, Request } from 'express';
+
 import { eStatusHTTP } from 'src/services/@enums/response.enum';
 import { ProdutoService } from 'src/services/produto.service';
 import { ResponseService } from 'src/services/response.service';
 import { Utils } from 'src/utils/sistema.utils';
-import { Response, Request } from 'express';
-
 @Controller('/produto')
 export class ProdutoController {
   constructor(
