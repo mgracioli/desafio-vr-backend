@@ -17,13 +17,21 @@ export class ProdutoLojaEntity extends BaseEntity {
   @ManyToOne(() => ProdutoEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'id_produto' })
   produto: ProdutoEntity;
-  @Column({ name: 'id_produto', type: 'number', nullable: false })
+  @Column({
+    name: 'id_produto',
+    type: 'number',
+    nullable: false
+  })
   id_produto: number;
 
   @ManyToOne(() => LojaEntity)
   @JoinColumn({ name: 'id_loja' })
   loja: LojaEntity;
-  @Column({ name: 'id_loja', type: 'number', nullable: false })
+  @Column({
+    name: 'id_loja',
+    type: 'number',
+    nullable: false
+  })
   id_loja: number;
 
   @Column({
@@ -31,7 +39,7 @@ export class ProdutoLojaEntity extends BaseEntity {
     type: 'numeric',
     precision: 13,
     scale: 3,
-    nullable: false,
+    nullable: true,
   })
   preco_venda: number;
 }

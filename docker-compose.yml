@@ -1,12 +1,10 @@
-version: "3.5"
-
 services:
   backend:
     container_name: desafiovrbackend
     image: mrg/desafiovrbackend:1.0.0
     build: .
     ports:
-      - 3000:3000
+      - '${SERVER_PORT}:${SERVER_PORT}'
     environment:
       DB_TYPE: postgres
       DB_HOST: database
@@ -20,16 +18,14 @@ services:
     container_name: desafiovrpostgres
     image: postgres
     ports:
-      - '${DB_PORT}:${DB_PORT}'
+      - '5432:5432'
     environment:
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
     volumes:
       - pgdata:/var/lib/postgresql/data
-    networks:
-      - postgres
     restart: unless-stopped
 volumes:
   pgdata:
-networks:
-  postgres:

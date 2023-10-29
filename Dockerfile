@@ -1,6 +1,6 @@
 FROM node:16
 
-WORKDIR /usr/src/app
+COPY *.sql /docker-entrypoint-initdb.d/
 
 COPY package*.json ./
 
@@ -10,6 +10,6 @@ COPY . .
 
 RUN npm run build
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["npm", "run", "start"]

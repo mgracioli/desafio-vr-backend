@@ -5,7 +5,11 @@ export class ProdutoEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'descricao', length: 60, nullable: false })
+  @Column({
+    name: 'descricao',
+    length: 60,
+    nullable: false
+  })
   descricao: string;
 
   @Column({
@@ -13,10 +17,14 @@ export class ProdutoEntity extends BaseEntity {
     type: 'numeric',
     precision: 13,
     scale: 3,
-    nullable: false,
+    nullable: true
   })
   custo: number;
 
-  @Column({ name: 'imagem', type: 'bytea' })
+  @Column({
+    name: 'imagem',
+    type: 'bytea',
+    nullable: true
+  })
   imagem: Buffer;
 }
